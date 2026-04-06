@@ -5,165 +5,314 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>ระบบตัดสินการประกวด</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&family=IBM+Plex+Mono:wght@400;600&display=swap');
-  :root {
-    --gold:#C9A84C; --gold-light:#E8C96A; --gold-dim:#7A6130;
-    --ink:#0F0D0A; --green:#1E7A4A; --green-bright:#4CAF7D;
-    --red:#C0392B; --panel:#1A1712; --panel-mid:#252018; --panel-light:#2E2820;
-    --border:rgba(201,168,76,0.22); --text:#F5F0E8; --text-dim:rgba(245,240,232,0.45);
-  }
-  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  body{font-family:'Sarabun',sans-serif;background:var(--panel);color:var(--text);min-height:100vh;overflow-x:hidden}
-  .screen{display:none;min-height:100vh;flex-direction:column}
-  .screen.active{display:flex}
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&family=IBM+Plex+Mono:wght@400;600&display=swap');
 
-  /* LOADING */
-  #screen-loading{align-items:center;justify-content:center;gap:16px}
-  .spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
-  @keyframes spin{to{transform:rotate(360deg)}}
+:root {
+  --bg: #F4F6F5;
+  --bg2: #EAEEEC;
+  --white: #FFFFFF;
+  --green: #2E7D52;
+  --green-light: #E8F5EE;
+  --green-mid: #4CAF7D;
+  --green-dark: #1B5E38;
+  --gray1: #1C2B24;
+  --gray2: #4A5E54;
+  --gray3: #8A9E94;
+  --gray4: #C4D0CB;
+  --gray5: #E2EAE6;
+  --red: #C0392B;
+  --red-light: #FDECEA;
+  --gold: #B8860B;
+  --border: #D0DDD7;
+  --shadow: 0 1px 4px rgba(0,0,0,0.08);
+  --shadow-md: 0 2px 12px rgba(0,0,0,0.10);
+}
 
-  /* TOP BAR */
-  .top-bar{background:var(--panel-mid);border-bottom:1px solid var(--border);padding:13px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100}
-  .top-bar-title{flex:1}
-  .top-bar-label{font-size:10px;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase}
-  .top-bar-name{font-size:16px;font-weight:700;color:var(--gold-light)}
-  .badge{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-dim);background:rgba(201,168,76,.07);border:1px solid var(--border);border-radius:4px;padding:3px 8px}
-  .btn-sm{background:none;border:1px solid var(--border);color:var(--text-dim);border-radius:8px;padding:6px 13px;font-family:'Sarabun',sans-serif;font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap}
-  .btn-sm:hover{border-color:var(--gold);color:var(--gold)}
-  .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--text-dim);flex-shrink:0;transition:background .3s}
-  .sync-dot.ok{background:var(--green-bright)}
-  .sync-dot.err{background:var(--red)}
-  .sync-dot.syncing{animation:pulse .8s infinite;background:var(--gold)}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
-  /* ROLE */
-  #screen-role{align-items:center;justify-content:center;padding:32px 24px;background:radial-gradient(ellipse at 50% 25%,rgba(201,168,76,.07) 0%,transparent 65%)}
-  .role-logo{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.2em;color:var(--gold-dim);text-transform:uppercase;margin-bottom:12px}
-  .role-title{font-size:26px;font-weight:800;color:var(--gold-light);margin-bottom:6px;letter-spacing:-.02em}
-  .role-subtitle{font-size:13px;color:var(--text-dim);margin-bottom:36px}
-  .role-cards{display:flex;flex-direction:column;gap:10px;width:100%;max-width:360px}
-  .role-card{background:var(--panel-mid);border:1.5px solid var(--border);border-radius:14px;padding:18px 20px;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .18s;position:relative;overflow:hidden}
-  .role-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(201,168,76,.1) 0%,transparent 50%);opacity:0;transition:opacity .18s}
-  .role-card:hover::before,.role-card:active::before{opacity:1}
-  .role-card:active{transform:scale(.98);border-color:var(--gold)}
-  .role-icon{font-size:26px;flex-shrink:0;width:40px;text-align:center}
-  .role-info{flex:1}
-  .role-name{font-size:15px;font-weight:700;margin-bottom:2px}
-  .role-desc{font-size:11px;color:var(--text-dim);line-height:1.5}
-  .role-arrow{color:var(--text-dim);font-size:20px}
+body {
+  font-family: 'Sarabun', sans-serif;
+  background: var(--bg);
+  color: var(--gray1);
+  min-height: 100vh;
+  overflow-x: hidden;
+  font-size: 15px;
+}
 
-  /* SETUP */
-  .setup-body{flex:1;overflow-y:auto;padding:16px 16px 40px}
-  .setup-section{margin-bottom:24px}
-  .setup-section-title{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);opacity:.7;margin-bottom:10px;padding-left:2px}
-  .setup-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;background:var(--panel-mid);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
-  .setup-row-label{font-size:11px;color:var(--text-dim);width:60px;flex-shrink:0;font-family:'IBM Plex Mono',monospace}
-  .setup-input{flex:1;background:none;border:none;color:var(--text);font-family:'Sarabun',sans-serif;font-size:14px;font-weight:600;outline:none;min-width:0}
-  .setup-input::placeholder{color:var(--text-dim);font-weight:400}
-  .setup-input-max{width:52px;background:rgba(201,168,76,.06);border:1px solid var(--border);border-radius:6px;color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;text-align:center;padding:4px 6px;outline:none}
-  .setup-max-label{font-size:11px;color:var(--text-dim);white-space:nowrap}
-  .btn-setup-save{background:var(--gold);color:var(--ink);border:none;border-radius:10px;padding:15px;font-family:'Sarabun',sans-serif;font-size:15px;font-weight:700;cursor:pointer;width:100%;letter-spacing:.05em;transition:all .15s;margin-top:8px}
-  .btn-setup-save:hover{background:var(--gold-light)}
-  .btn-setup-save:active{transform:scale(.98)}
-  .setup-note{font-size:11px;color:var(--text-dim);text-align:center;margin-top:10px;line-height:1.6}
+.screen { display: none; min-height: 100vh; flex-direction: column; }
+.screen.active { display: flex; }
 
-  /* JUDGE SELECT */
-  .judge-select-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:360px}
-  .judge-select-card{background:var(--panel-mid);border:1.5px solid var(--border);border-radius:12px;padding:15px 13px;cursor:pointer;transition:all .15s;position:relative}
-  .judge-select-card:active{transform:scale(.97);border-color:var(--gold)}
-  .jscard-num{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--gold-dim);letter-spacing:.1em;margin-bottom:4px}
-  .jscard-name{font-size:14px;font-weight:700;margin-bottom:2px}
-  .jscard-status{font-size:10px;color:var(--text-dim)}
+/* ── LOADING ── */
+#screen-loading { align-items: center; justify-content: center; gap: 14px; background: var(--white); }
+.spinner { width: 32px; height: 32px; border: 3px solid var(--gray5); border-top-color: var(--green); border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-  /* JUDGE SCORING */
-  .contestant-tabs{display:flex;overflow-x:auto;background:var(--panel);border-bottom:1px solid var(--border);scrollbar-width:none}
-  .contestant-tabs::-webkit-scrollbar{display:none}
-  .tab-btn{flex:1;min-width:56px;padding:10px 4px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-dim);font-family:'Sarabun',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;position:relative}
-  .tab-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
-  .tab-btn.done{color:var(--green-bright)}
-  .tab-btn.done.active{color:var(--gold);border-bottom-color:var(--gold)}
-  .tab-dot{position:absolute;top:6px;right:6px;width:5px;height:5px;border-radius:50%;background:var(--green-bright)}
-  .scoring-panel{flex:1;overflow-y:auto;padding:16px}
-  .contestant-header{text-align:center;margin-bottom:20px}
-  .contestant-num-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--gold-dim);letter-spacing:.15em;text-transform:uppercase;margin-bottom:4px}
-  .contestant-name-big{font-size:22px;font-weight:800;color:var(--gold-light)}
-  .criteria-list{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
-  .criterion-card{background:var(--panel-mid);border:1px solid var(--border);border-radius:12px;padding:14px}
-  .criterion-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
-  .criterion-name{font-size:14px;font-weight:700}
-  .criterion-max{font-size:11px;color:var(--text-dim);margin-top:2px}
-  .criterion-score-display{font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:600;color:var(--gold);min-width:50px;text-align:right}
-  .score-slider{width:100%;height:6px;-webkit-appearance:none;appearance:none;background:rgba(201,168,76,.15);border-radius:3px;outline:none;cursor:pointer}
-  .score-slider::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:var(--gold);border:2px solid var(--ink);box-shadow:0 2px 8px rgba(0,0,0,.4);cursor:pointer;transition:transform .1s}
-  .score-slider:active::-webkit-slider-thumb{transform:scale(1.2)}
-  .score-ticks{display:flex;justify-content:space-between;margin-top:4px}
-  .score-tick{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text-dim)}
-  .quick-btns{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
-  .quick-btn{flex:1;min-width:30px;padding:7px 2px;background:rgba(201,168,76,.06);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;cursor:pointer;transition:all .1s;text-align:center}
-  .quick-btn:hover,.quick-btn.active{background:var(--gold);color:var(--ink);border-color:var(--gold)}
-  .score-footer{background:var(--panel-mid);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
-  .total-label{font-size:12px;color:var(--text-dim)}
-  .total-max{font-size:11px;color:var(--text-dim)}
-  .total-score{font-family:'IBM Plex Mono',monospace;font-size:36px;font-weight:600;color:var(--gold-light)}
-  .btn-save{background:var(--green);color:#fff;border:none;border-radius:10px;padding:14px;font-family:'Sarabun',sans-serif;font-size:15px;font-weight:700;cursor:pointer;width:100%;margin-bottom:32px;letter-spacing:.05em;transition:all .15s}
-  .btn-save:hover{background:#25A05F}
-  .btn-save:active{transform:scale(.98)}
+/* ── TOP BAR ── */
+.top-bar {
+  background: var(--white);
+  border-bottom: 1.5px solid var(--border);
+  padding: 12px 16px;
+  display: flex; align-items: center; gap: 10px;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: var(--shadow);
+}
+.top-bar-title { flex: 1; }
+.top-bar-label { font-size: 10px; color: var(--gray3); letter-spacing: .1em; text-transform: uppercase; }
+.top-bar-name { font-size: 16px; font-weight: 700; color: var(--gray1); }
+.badge {
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+  color: var(--green); background: var(--green-light);
+  border: 1px solid #B2D8C4; border-radius: 20px; padding: 3px 10px;
+}
+.btn-sm {
+  background: none; border: 1.5px solid var(--border); color: var(--gray2);
+  border-radius: 8px; padding: 6px 14px;
+  font-family: 'Sarabun', sans-serif; font-size: 13px; cursor: pointer; transition: all .15s;
+}
+.btn-sm:hover { border-color: var(--green); color: var(--green); }
 
-  /* DASHBOARD */
-  .dashboard-body{flex:1;overflow-y:auto;padding:14px}
-  .dash-section-title{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;margin-top:4px;padding-left:2px}
-  .rank-list{display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
-  .rank-card{background:var(--panel-mid);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;transition:border-color .4s}
-  .rank-card.top{border-color:var(--gold);background:rgba(201,168,76,.05)}
-  .rank-num{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;color:var(--text-dim);width:28px;text-align:center;flex-shrink:0}
-  .rank-card.top .rank-num{color:var(--gold)}
-  .rank-info{flex:1;min-width:0}
-  .rank-name{font-size:15px;font-weight:700;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .rank-card.top .rank-name{color:var(--gold-light)}
-  .rank-judge-scores{display:flex;gap:5px;flex-wrap:wrap}
-  .rjs{font-family:'IBM Plex Mono',monospace;font-size:10px;background:rgba(201,168,76,.07);border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--text-dim)}
-  .rjs.done{color:var(--gold-dim);border-color:rgba(201,168,76,.28)}
-  .rank-total{font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:600;color:var(--text-dim);flex-shrink:0}
-  .rank-card.top .rank-total{color:var(--gold-light)}
-  .judge-status-strip{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px}
-  .jss-card{background:var(--panel-mid);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
-  .jss-card.active-judge{border-color:rgba(76,175,125,.4)}
-  .jss-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
-  .jss-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px}
-  .jss-done{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-dim)}
-  .jss-bar-wrap{height:3px;background:rgba(201,168,76,.1);border-radius:2px;overflow:hidden}
-  .jss-bar{height:100%;background:var(--gold);border-radius:2px;transition:width .5s ease}
-  .dash-table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border);margin-bottom:20px}
-  table{width:100%;border-collapse:collapse;font-size:12px}
-  thead{background:rgba(201,168,76,.08)}
-  th{padding:9px 7px;text-align:center;font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--gold);white-space:nowrap;border-bottom:1px solid var(--border)}
-  th:first-child{text-align:left;padding-left:11px}
-  td{padding:9px 7px;text-align:center;border-bottom:1px solid rgba(201,168,76,.06);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text);vertical-align:middle}
-  td:first-child{font-family:'Sarabun',sans-serif;font-size:13px;font-weight:600;text-align:left;padding-left:11px}
-  tr:last-child td{border-bottom:none}
-  tr.rank-row-1 td{color:var(--gold-light)}
-  tr.rank-row-1 td:first-child{font-weight:800}
-  .total-cell{font-weight:700;font-size:14px;color:var(--gold-light)}
-  .dbadge{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(201,168,76,.1);color:var(--gold-dim)}
-  .dbadge.r1{background:var(--gold);color:var(--ink);font-weight:700}
-  .btn-reset-dash{background:none;border:1px solid rgba(192,57,43,.35);color:#E57367;border-radius:10px;padding:12px;font-family:'Sarabun',sans-serif;font-size:13px;cursor:pointer;width:100%;margin-bottom:32px;transition:all .15s}
-  .btn-reset-dash:hover{background:rgba(192,57,43,.08)}
+/* sync */
+.sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gray4); flex-shrink: 0; transition: background .3s; }
+.sync-dot.ok { background: var(--green-mid); }
+.sync-dot.err { background: var(--red); }
+.sync-dot.syncing { animation: pulse .8s infinite; background: var(--gold); }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:.3} }
 
-  /* MODAL */
-  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:300;display:flex;align-items:center;justify-content:center;padding:24px}
-  .modal-box{background:var(--panel-mid);border:1px solid var(--border);border-radius:16px;padding:22px 20px;width:100%;max-width:340px}
-  .modal-title{font-size:16px;font-weight:700;color:var(--gold-light);margin-bottom:4px}
-  .modal-sub{font-size:12px;color:var(--text-dim);margin-bottom:14px}
-  .modal-input{width:100%;background:rgba(201,168,76,.06);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;font-family:'Sarabun',sans-serif;font-size:16px;color:var(--text);outline:none;margin-bottom:12px;transition:border-color .15s}
-  .modal-input:focus{border-color:var(--gold)}
-  .modal-btns{display:flex;gap:8px}
-  .btn-mc{flex:1;background:none;border:1px solid var(--border);color:var(--text-dim);border-radius:10px;padding:10px;font-family:'Sarabun',sans-serif;font-size:13px;cursor:pointer}
-  .btn-ms{flex:2;background:var(--gold);color:var(--ink);border:none;border-radius:10px;padding:10px;font-family:'Sarabun',sans-serif;font-size:14px;font-weight:700;cursor:pointer}
+/* ── ROLE SCREEN ── */
+#screen-role {
+  align-items: center; justify-content: center; padding: 32px 20px;
+  background: linear-gradient(160deg, #E8F5EE 0%, #F4F6F5 50%);
+}
+.role-logo { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .2em; color: var(--green); text-transform: uppercase; margin-bottom: 10px; }
+.role-title { font-size: 26px; font-weight: 800; color: var(--gray1); margin-bottom: 4px; }
+.role-subtitle { font-size: 13px; color: var(--gray3); margin-bottom: 32px; }
+.role-cards { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 380px; }
+.role-card {
+  background: var(--white); border: 1.5px solid var(--border); border-radius: 14px;
+  padding: 18px 20px; cursor: pointer; display: flex; align-items: center; gap: 14px;
+  transition: all .15s; box-shadow: var(--shadow);
+}
+.role-card:hover { border-color: var(--green); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.role-card:active { transform: scale(.98); }
+.role-card.green-card { border-color: #B2D8C4; background: var(--green-light); }
+.role-icon { font-size: 26px; flex-shrink: 0; width: 40px; text-align: center; }
+.role-info { flex: 1; }
+.role-name { font-size: 15px; font-weight: 700; color: var(--gray1); margin-bottom: 2px; }
+.role-desc { font-size: 12px; color: var(--gray3); line-height: 1.5; }
+.role-arrow { color: var(--gray3); font-size: 20px; }
 
-  /* TOAST */
-  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--green);color:#fff;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:600;z-index:999;transition:transform .3s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;pointer-events:none}
-  .toast.show{transform:translateX(-50%) translateY(0)}
-  .empty-state{text-align:center;color:var(--text-dim);padding:40px 0;font-size:14px;line-height:1.8}
+/* ── ROUND LIST ── */
+.round-list-body { flex: 1; overflow-y: auto; padding: 16px; }
+.round-card {
+  background: var(--white); border: 1.5px solid var(--border); border-radius: 12px;
+  padding: 16px; margin-bottom: 10px; cursor: pointer; display: flex; align-items: center;
+  gap: 12px; transition: all .15s; box-shadow: var(--shadow);
+}
+.round-card:hover { border-color: var(--green); box-shadow: var(--shadow-md); }
+.round-card:active { transform: scale(.99); }
+.round-num {
+  background: var(--green-light); color: var(--green-dark);
+  border-radius: 8px; width: 40px; height: 40px; display: flex; align-items: center;
+  justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 600; flex-shrink: 0;
+}
+.round-info { flex: 1; }
+.round-name { font-size: 15px; font-weight: 700; color: var(--gray1); }
+.round-meta { font-size: 12px; color: var(--gray3); margin-top: 2px; }
+.round-status { font-size: 11px; font-weight: 600; }
+.round-status.complete { color: var(--green); }
+.round-status.partial { color: var(--gold); }
+.round-status.empty { color: var(--gray3); }
+
+.btn-add-round {
+  background: var(--green); color: #fff; border: none; border-radius: 12px;
+  padding: 15px; font-family: 'Sarabun', sans-serif; font-size: 15px; font-weight: 700;
+  cursor: pointer; width: 100%; margin-top: 4px; transition: all .15s;
+}
+.btn-add-round:hover { background: var(--green-dark); }
+.btn-add-round:active { transform: scale(.98); }
+
+.empty-state { text-align: center; color: var(--gray3); padding: 48px 0; font-size: 14px; line-height: 2; }
+
+/* ── SETUP / ROUND EDIT ── */
+.setup-body { flex: 1; overflow-y: auto; padding: 16px 16px 40px; }
+.setup-section { margin-bottom: 22px; }
+.setup-section-title {
+  font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--green); font-weight: 700; margin-bottom: 8px; padding-left: 2px;
+}
+.setup-row {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  background: var(--white); border: 1.5px solid var(--border); border-radius: 10px;
+  padding: 10px 12px; box-shadow: var(--shadow);
+}
+.setup-row:focus-within { border-color: var(--green); }
+.setup-row-label { font-size: 11px; color: var(--gray3); width: 56px; flex-shrink: 0; font-family: 'IBM Plex Mono', monospace; }
+.setup-input { flex: 1; background: none; border: none; color: var(--gray1); font-family: 'Sarabun', sans-serif; font-size: 14px; font-weight: 600; outline: none; min-width: 0; }
+.setup-input::placeholder { color: var(--gray4); font-weight: 400; }
+.setup-input-max { width: 48px; background: var(--green-light); border: 1px solid #B2D8C4; border-radius: 6px; color: var(--green-dark); font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; text-align: center; padding: 4px; outline: none; }
+.setup-max-label { font-size: 11px; color: var(--gray3); white-space: nowrap; }
+.btn-setup-save {
+  background: var(--green); color: #fff; border: none; border-radius: 10px;
+  padding: 14px; font-family: 'Sarabun', sans-serif; font-size: 15px; font-weight: 700;
+  cursor: pointer; width: 100%; margin-top: 6px; transition: all .15s;
+}
+.btn-setup-save:hover { background: var(--green-dark); }
+.btn-setup-save:active { transform: scale(.98); }
+.setup-note { font-size: 11px; color: var(--gray3); text-align: center; margin-top: 8px; line-height: 1.6; }
+
+/* ── JUDGE SELECT ── */
+.judge-select-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 380px; }
+.judge-select-card {
+  background: var(--white); border: 1.5px solid var(--border); border-radius: 12px;
+  padding: 15px 13px; cursor: pointer; transition: all .15s; box-shadow: var(--shadow);
+}
+.judge-select-card:hover { border-color: var(--green); box-shadow: var(--shadow-md); }
+.judge-select-card:active { transform: scale(.97); }
+.jscard-num { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--gray3); letter-spacing: .1em; margin-bottom: 4px; }
+.jscard-name { font-size: 14px; font-weight: 700; color: var(--gray1); margin-bottom: 2px; }
+.jscard-status { font-size: 10px; color: var(--gray3); }
+.jscard-status.done { color: var(--green); }
+
+/* ── TABS ── */
+.contestant-tabs { display: flex; overflow-x: auto; background: var(--white); border-bottom: 1.5px solid var(--border); scrollbar-width: none; }
+.contestant-tabs::-webkit-scrollbar { display: none; }
+.tab-btn { flex: 1; min-width: 56px; padding: 11px 4px; background: none; border: none; border-bottom: 2.5px solid transparent; color: var(--gray3); font-family: 'Sarabun', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s; position: relative; }
+.tab-btn.active { color: var(--green); border-bottom-color: var(--green); }
+.tab-btn.done { color: var(--green-mid); }
+.tab-btn.done.active { color: var(--green); border-bottom-color: var(--green); }
+.tab-dot { position: absolute; top: 6px; right: 6px; width: 5px; height: 5px; border-radius: 50%; background: var(--green-mid); }
+
+/* ── SCORING PANEL ── */
+.scoring-panel { flex: 1; overflow-y: auto; padding: 14px; background: var(--bg); }
+.contestant-header { text-align: center; margin-bottom: 16px; padding: 16px; background: var(--white); border-radius: 12px; border: 1.5px solid var(--border); box-shadow: var(--shadow); }
+.contestant-num-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--gray3); letter-spacing: .15em; text-transform: uppercase; margin-bottom: 3px; }
+.contestant-name-big { font-size: 20px; font-weight: 800; color: var(--gray1); }
+
+.criteria-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.criterion-card { background: var(--white); border: 1.5px solid var(--border); border-radius: 12px; padding: 14px; box-shadow: var(--shadow); }
+.criterion-card.scored { border-color: #B2D8C4; }
+.criterion-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.criterion-left { flex: 1; padding-right: 12px; }
+.criterion-name { font-size: 13px; font-weight: 700; color: var(--gray1); line-height: 1.3; }
+.criterion-max { font-size: 11px; color: var(--gray3); margin-top: 2px; }
+.criterion-score-display {
+  font-family: 'IBM Plex Mono', monospace; font-size: 30px; font-weight: 700;
+  color: var(--green); min-width: 44px; text-align: right; flex-shrink: 0;
+}
+.criterion-score-display.empty { color: var(--gray4); }
+
+/* Score buttons 1-5 */
+.score-btns-5 { display: grid; grid-template-columns: repeat(5,1fr); gap: 6px; }
+.score-btn-5 {
+  border: 1.5px solid var(--border); border-radius: 8px; padding: 8px 4px;
+  background: var(--bg); cursor: pointer; display: flex; flex-direction: column;
+  align-items: center; gap: 2px; transition: all .12s; font-family: 'Sarabun', sans-serif;
+}
+.score-btn-5:active { transform: scale(.95); }
+.score-btn-5.active { background: var(--green); border-color: var(--green); }
+.score-btn-5.active .sbn { color: #fff; }
+.score-btn-5.active .sbl { color: rgba(255,255,255,.85); }
+.sbn { font-family: 'IBM Plex Mono', monospace; font-size: 18px; font-weight: 700; color: var(--gray1); line-height: 1; }
+.sbl { font-size: 9px; color: var(--gray3); text-align: center; line-height: 1.2; }
+.score-btn-5:not(.active):hover { border-color: var(--green-mid); background: var(--green-light); }
+
+/* Score colors by value */
+.score-btn-5[data-v="1"] { --hover-bg: #FEF3F2; }
+.score-btn-5[data-v="2"] { --hover-bg: #FFF8E7; }
+.score-btn-5[data-v="3"] { --hover-bg: #F0F4FF; }
+.score-btn-5[data-v="4"] { --hover-bg: #E8F5EE; }
+.score-btn-5[data-v="5"] { --hover-bg: var(--green-light); }
+
+.score-footer {
+  background: var(--white); border: 1.5px solid var(--border); border-radius: 12px;
+  padding: 14px 16px; margin-bottom: 12px; display: flex; align-items: center;
+  justify-content: space-between; box-shadow: var(--shadow);
+}
+.total-label { font-size: 12px; color: var(--gray3); }
+.total-max-txt { font-size: 11px; color: var(--gray3); }
+.total-score { font-family: 'IBM Plex Mono', monospace; font-size: 38px; font-weight: 700; color: var(--green); }
+
+.btn-save {
+  background: var(--green); color: #fff; border: none; border-radius: 12px;
+  padding: 15px; font-family: 'Sarabun', sans-serif; font-size: 15px; font-weight: 700;
+  cursor: pointer; width: 100%; margin-bottom: 32px; letter-spacing: .03em; transition: all .15s;
+  box-shadow: 0 2px 8px rgba(46,125,82,.3);
+}
+.btn-save:hover { background: var(--green-dark); }
+.btn-save:active { transform: scale(.98); }
+
+/* ── DASHBOARD ── */
+.dashboard-body { flex: 1; overflow-y: auto; padding: 14px; background: var(--bg); }
+.dash-section-title { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--green); font-weight: 700; margin-bottom: 8px; margin-top: 6px; padding-left: 2px; }
+
+.rank-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+.rank-card {
+  background: var(--white); border: 1.5px solid var(--border); border-radius: 12px;
+  padding: 12px 14px; display: flex; align-items: center; gap: 12px; box-shadow: var(--shadow);
+}
+.rank-card.top { border-color: var(--green); background: var(--green-light); }
+.rank-num { font-family: 'IBM Plex Mono', monospace; font-size: 20px; font-weight: 700; color: var(--gray4); width: 28px; text-align: center; flex-shrink: 0; }
+.rank-card.top .rank-num { color: var(--green); }
+.rank-info { flex: 1; min-width: 0; }
+.rank-name { font-size: 15px; font-weight: 700; color: var(--gray1); margin-bottom: 4px; }
+.rank-card.top .rank-name { color: var(--green-dark); }
+.rank-judge-scores { display: flex; gap: 5px; flex-wrap: wrap; }
+.rjs { font-family: 'IBM Plex Mono', monospace; font-size: 10px; background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; color: var(--gray3); }
+.rjs.done { color: var(--green); border-color: #B2D8C4; background: var(--green-light); }
+.rank-total { font-family: 'IBM Plex Mono', monospace; font-size: 28px; font-weight: 700; color: var(--gray4); flex-shrink: 0; }
+.rank-card.top .rank-total { color: var(--green-dark); }
+
+.judge-status-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+.jss-card { background: var(--white); border: 1.5px solid var(--border); border-radius: 10px; padding: 11px 13px; box-shadow: var(--shadow); }
+.jss-card.active-j { border-color: #B2D8C4; }
+.jss-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.jss-name { font-size: 12px; font-weight: 700; color: var(--gray1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; }
+.jss-done { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--green); }
+.jss-bar-wrap { height: 4px; background: var(--gray5); border-radius: 2px; overflow: hidden; }
+.jss-bar { height: 100%; background: var(--green); border-radius: 2px; transition: width .5s ease; }
+
+/* Round selector in dashboard */
+.round-selector { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 14px; padding-bottom: 2px; scrollbar-width: none; }
+.round-selector::-webkit-scrollbar { display: none; }
+.round-tab {
+  flex-shrink: 0; padding: 6px 14px; border-radius: 20px; border: 1.5px solid var(--border);
+  background: var(--white); color: var(--gray2); font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.round-tab.active { background: var(--green); border-color: var(--green); color: #fff; }
+.round-tab:hover:not(.active) { border-color: var(--green); color: var(--green); }
+
+.dash-table-wrap { overflow-x: auto; border-radius: 10px; border: 1.5px solid var(--border); margin-bottom: 20px; background: var(--white); box-shadow: var(--shadow); }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+thead { background: var(--green-light); }
+th { padding: 9px 7px; text-align: center; font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--green-dark); white-space: nowrap; border-bottom: 1.5px solid var(--border); }
+th:first-child { text-align: left; padding-left: 12px; }
+td { padding: 9px 7px; text-align: center; border-bottom: 1px solid var(--gray5); font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--gray1); }
+td:first-child { font-family: 'Sarabun', sans-serif; font-size: 13px; font-weight: 600; text-align: left; padding-left: 12px; }
+tr:last-child td { border-bottom: none; }
+tr.rank-row-1 td { color: var(--green-dark); }
+tr.rank-row-1 td:first-child { font-weight: 800; }
+.total-cell { font-weight: 700; font-size: 14px; color: var(--green); }
+.dbadge { display: inline-block; font-family: 'IBM Plex Mono', monospace; font-size: 10px; padding: 2px 7px; border-radius: 10px; background: var(--bg2); color: var(--gray2); }
+.dbadge.r1 { background: var(--green); color: #fff; font-weight: 700; }
+
+.btn-danger { background: none; border: 1.5px solid #FCCAC5; color: var(--red); border-radius: 10px; padding: 11px; font-family: 'Sarabun', sans-serif; font-size: 13px; cursor: pointer; width: 100%; margin-bottom: 32px; transition: all .15s; }
+.btn-danger:hover { background: var(--red-light); }
+
+/* ── MODAL ── */
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 300; display: flex; align-items: center; justify-content: center; padding: 24px; }
+.modal-box { background: var(--white); border: 1.5px solid var(--border); border-radius: 16px; padding: 24px 20px; width: 100%; max-width: 360px; box-shadow: var(--shadow-md); }
+.modal-title { font-size: 17px; font-weight: 800; color: var(--gray1); margin-bottom: 4px; }
+.modal-sub { font-size: 12px; color: var(--gray3); margin-bottom: 16px; line-height: 1.5; }
+.modal-input { width: 100%; background: var(--bg); border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 14px; font-family: 'Sarabun', sans-serif; font-size: 15px; color: var(--gray1); outline: none; margin-bottom: 12px; transition: border-color .15s; }
+.modal-input:focus { border-color: var(--green); background: var(--white); }
+.modal-btns { display: flex; gap: 8px; }
+.btn-mc { flex: 1; background: none; border: 1.5px solid var(--border); color: var(--gray2); border-radius: 10px; padding: 11px; font-family: 'Sarabun', sans-serif; font-size: 13px; cursor: pointer; }
+.btn-ms { flex: 2; background: var(--green); color: #fff; border: none; border-radius: 10px; padding: 11px; font-family: 'Sarabun', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; }
+
+/* ── TOAST ── */
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--green); color: #fff; border-radius: 10px; padding: 11px 22px; font-size: 13px; font-weight: 600; z-index: 999; transition: transform .3s cubic-bezier(.34,1.56,.64,1); white-space: nowrap; pointer-events: none; box-shadow: var(--shadow-md); }
+.toast.show { transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
@@ -171,17 +320,17 @@
 <!-- LOADING -->
 <div id="screen-loading" class="screen active">
   <div class="spinner"></div>
-  <div style="font-size:13px;color:var(--text-dim)">กำลังเชื่อมต่อ...</div>
+  <div style="font-size:13px;color:var(--gray3)">กำลังเชื่อมต่อ...</div>
 </div>
 
 <!-- ROLE -->
 <div id="screen-role" class="screen">
-  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 24px;background:radial-gradient(ellipse at 50% 25%,rgba(201,168,76,.07) 0%,transparent 65%)">
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 20px">
     <div class="role-logo">Scoring System</div>
-    <div class="role-title">เลือกโหมดการใช้งาน</div>
-    <div class="role-subtitle">แต่ละเครื่องเลือก 1 โหมด</div>
+    <div class="role-title">ระบบตัดสินการประกวด</div>
+    <div class="role-subtitle">เลือกโหมดการใช้งาน</div>
     <div class="role-cards">
-      <div class="role-card" onclick="showJudgeSelect()">
+      <div class="role-card green-card" onclick="showJudgeRoundSelect()">
         <div class="role-icon">🧑‍⚖️</div>
         <div class="role-info">
           <div class="role-name">กรรมการ</div>
@@ -189,19 +338,19 @@
         </div>
         <div class="role-arrow">›</div>
       </div>
-      <div class="role-card" onclick="enterDashboard()" style="border-color:rgba(59,130,246,.3)">
+      <div class="role-card" onclick="enterDashboard()">
         <div class="role-icon">📊</div>
         <div class="role-info">
           <div class="role-name">Dashboard (เครื่องกลาง)</div>
-          <div class="role-desc">ดูคะแนนสด real-time · โต๊ะควบคุม / โปรเจกเตอร์</div>
+          <div class="role-desc">ดูคะแนนสด real-time ทุกรอบ</div>
         </div>
         <div class="role-arrow">›</div>
       </div>
-      <div class="role-card" onclick="showSetup()" style="border-color:rgba(201,168,76,.45)">
+      <div class="role-card" onclick="showSetup()">
         <div class="role-icon">⚙️</div>
         <div class="role-info">
           <div class="role-name">ตั้งค่าการแข่งขัน</div>
-          <div class="role-desc">แก้ชื่อกรรมการ · ผู้เข้าแข่งขัน · หัวข้อและคะแนนเต็ม</div>
+          <div class="role-desc">จัดการรอบ · กรรมการ · หัวข้อคะแนน</div>
         </div>
         <div class="role-arrow">›</div>
       </div>
@@ -209,31 +358,28 @@
   </div>
 </div>
 
-<!-- SETUP -->
-<div id="screen-setup" class="screen">
+<!-- JUDGE ROUND SELECT -->
+<div id="screen-judge-round" class="screen">
   <div class="top-bar">
     <button class="btn-sm" onclick="showRole()">← กลับ</button>
     <div class="top-bar-title">
-      <div class="top-bar-label">ตั้งค่า</div>
-      <div class="top-bar-name">การแข่งขัน</div>
-    </div>
-    <div style="display:flex;align-items:center;gap:6px">
-      <div class="sync-dot" id="setup-sync-dot"></div>
+      <div class="top-bar-label">กรรมการ</div>
+      <div class="top-bar-name">เลือกรอบ</div>
     </div>
   </div>
-  <div class="setup-body" id="setup-body"></div>
+  <div class="round-list-body" id="judge-round-list"></div>
 </div>
 
 <!-- JUDGE SELECT -->
 <div id="screen-judge-select" class="screen">
   <div class="top-bar">
-    <button class="btn-sm" onclick="showRole()">← กลับ</button>
+    <button class="btn-sm" onclick="showJudgeRoundSelect()">← กลับ</button>
     <div class="top-bar-title">
-      <div class="top-bar-label">เลือกกรรมการ</div>
+      <div class="top-bar-label" id="judge-select-round-label">รอบที่ 1</div>
       <div class="top-bar-name">คุณคือกรรมการท่านใด?</div>
     </div>
   </div>
-  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 20px;gap:16px">
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;gap:14px">
     <div class="judge-select-grid" id="judge-select-grid"></div>
   </div>
 </div>
@@ -243,10 +389,10 @@
   <div class="top-bar">
     <button class="btn-sm" onclick="confirmLeaveJudge()">← ออก</button>
     <div class="top-bar-title">
-      <div class="top-bar-label">กรรมการ</div>
+      <div class="top-bar-label" id="judge-bar-round">-</div>
       <div class="top-bar-name" id="judge-bar-name">-</div>
     </div>
-    <div style="display:flex;align-items:center;gap:6px">
+    <div style="display:flex;align-items:center;gap:7px">
       <div class="sync-dot" id="sync-dot"></div>
       <div class="badge" id="judge-progress-badge">0/5</div>
     </div>
@@ -263,13 +409,37 @@
       <div class="top-bar-label">Dashboard</div>
       <div class="top-bar-name">คะแนนสด</div>
     </div>
-    <div style="display:flex;align-items:center;gap:6px">
+    <div style="display:flex;align-items:center;gap:7px">
       <div class="sync-dot" id="dash-sync-dot"></div>
-      <div class="badge" id="dash-last-update">รอข้อมูล</div>
+      <div class="badge" id="dash-last-update">-</div>
     </div>
   </div>
-  <div class="dashboard-body" id="dashboard-body">
-    <div class="empty-state">รอข้อมูล...</div>
+  <div class="dashboard-body" id="dashboard-body"></div>
+</div>
+
+<!-- SETUP -->
+<div id="screen-setup" class="screen">
+  <div class="top-bar">
+    <button class="btn-sm" onclick="showRole()">← กลับ</button>
+    <div class="top-bar-title">
+      <div class="top-bar-label">ตั้งค่า</div>
+      <div class="top-bar-name">การแข่งขัน</div>
+    </div>
+    <div class="sync-dot" id="setup-sync-dot"></div>
+  </div>
+  <div class="setup-body" id="setup-body"></div>
+</div>
+
+<!-- Modal -->
+<div class="modal-backdrop" id="modal" style="display:none" onclick="onModalBackdrop(event)">
+  <div class="modal-box">
+    <div class="modal-title" id="modal-title"></div>
+    <div class="modal-sub" id="modal-sub"></div>
+    <input class="modal-input" id="modal-input" type="text" onkeydown="if(event.key==='Enter')modalConfirm()">
+    <div class="modal-btns">
+      <button class="btn-mc" onclick="closeModal()">ยกเลิก</button>
+      <button class="btn-ms" id="modal-confirm-btn" onclick="modalConfirm()">ตกลง</button>
+    </div>
   </div>
 </div>
 
@@ -277,7 +447,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, set, get, onValue, remove, update }
+import { getDatabase, ref, set, get, onValue, remove, update, push }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
@@ -290,60 +460,62 @@ const firebaseConfig = {
   appId: "1:348542338113:web:9226e8a4d191730a5032c0"
 };
 
-// ── DEFAULT CONFIG ──
+// ── DEFAULTS ──
 const DEFAULT_JUDGES = [
-  { id:1, name:'กรรมการที่ 1' },
-  { id:2, name:'กรรมการที่ 2' },
-  { id:3, name:'กรรมการที่ 3' },
-  { id:4, name:'กรรมการที่ 4' },
-];
-const DEFAULT_CONTESTANTS = [
-  { id:1, name:'ผู้เข้าแข่งขัน 1' },
-  { id:2, name:'ผู้เข้าแข่งขัน 2' },
-  { id:3, name:'ผู้เข้าแข่งขัน 3' },
-  { id:4, name:'ผู้เข้าแข่งขัน 4' },
-  { id:5, name:'ผู้เข้าแข่งขัน 5' },
+  {id:1,name:'กรรมการที่ 1'},{id:2,name:'กรรมการที่ 2'},
+  {id:3,name:'กรรมการที่ 3'},{id:4,name:'กรรมการที่ 4'},
 ];
 const DEFAULT_CRITERIA = [
-  { id:'c1', name:'ความคิดสร้างสรรค์',     max:30 },
-  { id:'c2', name:'การนำเสนอ',              max:25 },
-  { id:'c3', name:'เนื้อหาและความถูกต้อง', max:25 },
-  { id:'c4', name:'ความประทับใจรวม',        max:20 },
+  {id:'c1',name:'ความเป็นนวัตกรรมของผลงาน',max:5},
+  {id:'c2',name:'การแก้ปัญหาได้ตรงจุด',max:5},
+  {id:'c3',name:'ความเป็นไปได้ในการใช้งานจริง',max:5},
+  {id:'c4',name:'ผลกระทบและประโยชน์ที่คาดว่าจะได้รับ',max:5},
+  {id:'c5',name:'ศักยภาพในการขยายผล',max:5},
+  {id:'c6',name:'คุณภาพของการนำเสนอ',max:5},
+  {id:'c7',name:'การตอบคำถามคณะกรรมการ',max:5},
 ];
+const SCORE_LABELS = {1:'ต้องปรับปรุง',2:'ควรปรับปรุง',3:'ปานกลาง',4:'ดี',5:'ดีเยี่ยม'};
 
 // ── STATE ──
 let db;
-let judges      = DEFAULT_JUDGES.map(j=>({...j}));
-let contestants = DEFAULT_CONTESTANTS.map(c=>({...c}));
-let criteria    = DEFAULT_CRITERIA.map(c=>({...c}));
-let allScores   = {};
-let currentJudgeId    = null;
-let currentContestantId = 1;
-let dashUnsub  = null;
-let judgeUnsub = null;
+let judges    = DEFAULT_JUDGES.map(j=>({...j}));
+let criteria  = DEFAULT_CRITERIA.map(c=>({...c}));
+let rounds    = [];   // [{id, name, contestants:[{id,name}]}]
+let allScores = {};   // allScores[roundId][judgeId][contestantId][criteriaId]
+
+let currentRoundId      = null;
+let currentJudgeId      = null;
+let currentContestantId = null;
+let dashRoundId         = null;
+let dashUnsub           = null;
+let judgeUnsub          = null;
+let modalCallback       = null;
 
 function totalMax() { return criteria.reduce((s,c)=>s+c.max,0); }
+function currentRound() { return rounds.find(r=>r.id===currentRoundId); }
+function currentContestants() { return currentRound()?.contestants || []; }
 
 // ── INIT ──
 async function init() {
   try {
     const app = initializeApp(firebaseConfig);
     db = getDatabase(app);
-    const snap = await get(ref(db, '/'));
+    const snap = await get(ref(db,'/'));
     if (snap.exists()) {
       const d = snap.val();
-      if (d.judges)      judges      = d.judges;
-      if (d.contestants) contestants = d.contestants;
-      if (d.criteria)    criteria    = d.criteria;
-      if (d.scores)      allScores   = d.scores;
+      if (d.judges)   judges   = d.judges;
+      if (d.criteria) criteria = d.criteria;
+      if (d.rounds)   rounds   = Array.isArray(d.rounds) ? d.rounds.filter(Boolean) : Object.values(d.rounds||{});
+      if (d.scores)   allScores = d.scores;
     }
     showScreen('screen-role');
   } catch(e) {
     document.getElementById('screen-loading').innerHTML = `
-      <div style="padding:32px;text-align:center;color:var(--text-dim);max-width:300px">
-        <div style="font-size:32px;margin-bottom:14px">⚠️</div>
-        <div style="font-size:14px;line-height:1.8;margin-bottom:8px">เชื่อมต่อไม่ได้<br><span style="font-size:11px;opacity:.6">${e.message}</span></div>
-        <button onclick="location.reload()" style="margin-top:16px;background:var(--gold);color:var(--ink);border:none;border-radius:8px;padding:10px 24px;font-family:'Sarabun',sans-serif;font-size:14px;font-weight:700;cursor:pointer">ลองใหม่</button>
+      <div style="padding:32px;text-align:center;color:var(--gray3);max-width:300px">
+        <div style="font-size:32px;margin-bottom:12px">⚠️</div>
+        <div style="font-size:14px;line-height:1.8;margin-bottom:8px;color:var(--gray1)">เชื่อมต่อ Firebase ไม่ได้</div>
+        <div style="font-size:11px">${e.message}</div>
+        <button onclick="location.reload()" style="margin-top:16px;background:var(--green);color:#fff;border:none;border-radius:8px;padding:10px 24px;font-family:'Sarabun',sans-serif;font-size:14px;font-weight:700;cursor:pointer">ลองใหม่</button>
       </div>`;
   }
 }
@@ -356,164 +528,105 @@ function showScreen(id) {
 window.showRole = function() {
   if (judgeUnsub) { judgeUnsub(); judgeUnsub=null; }
   if (dashUnsub)  { dashUnsub();  dashUnsub=null;  }
-  currentJudgeId = null;
+  currentJudgeId=null; currentRoundId=null;
   showScreen('screen-role');
 };
 
-// ── SETUP ──
-window.showSetup = function() {
-  showScreen('screen-setup');
-  renderSetup();
-};
-
-function renderSetup() {
-  const body = document.getElementById('setup-body');
-  body.innerHTML = `
-    <div class="setup-section">
-      <div class="setup-section-title">ชื่อกรรมการ (${judges.length} ท่าน)</div>
-      ${judges.map((j,i)=>`
-        <div class="setup-row">
-          <div class="setup-row-label">กก. ${j.id}</div>
-          <input class="setup-input" id="judge-name-${i}" value="${j.name}" placeholder="ชื่อกรรมการ">
-        </div>`).join('')}
-    </div>
-
-    <div class="setup-section">
-      <div class="setup-section-title">ชื่อผู้เข้าแข่งขัน (${contestants.length} คน)</div>
-      ${contestants.map((c,i)=>`
-        <div class="setup-row">
-          <div class="setup-row-label">คน ${c.id}</div>
-          <input class="setup-input" id="contestant-name-${i}" value="${c.name}" placeholder="ชื่อผู้เข้าแข่งขัน">
-        </div>`).join('')}
-    </div>
-
-    <div class="setup-section">
-      <div class="setup-section-title">หัวข้อการให้คะแนน (${criteria.length} หัวข้อ)</div>
-      ${criteria.map((cr,i)=>`
-        <div class="setup-row">
-          <div class="setup-row-label">ข้อ ${i+1}</div>
-          <input class="setup-input" id="criteria-name-${i}" value="${cr.name}" placeholder="ชื่อหัวข้อ">
-          <input class="setup-input-max" id="criteria-max-${i}" type="number" min="1" max="100" value="${cr.max}">
-          <span class="setup-max-label">คะแนน</span>
-        </div>`).join('')}
-      <div style="font-size:11px;color:var(--text-dim);padding:6px 2px">
-        คะแนนรวมเต็ม: <span id="total-max-preview" style="color:var(--gold);font-family:'IBM Plex Mono',monospace;font-weight:600">${totalMax()}</span> คะแนน
-      </div>
-    </div>
-
-    <button class="btn-setup-save" onclick="saveSetup()">💾 บันทึกและ Sync ทุกเครื่อง</button>
-    <div class="setup-note">การตั้งค่าจะ sync ไปยังทุกเครื่องทันที<br>ควรตั้งค่าก่อนเริ่มให้คะแนน</div>
-  `;
-
-  // live update total max preview
-  criteria.forEach((_,i)=>{
-    document.getElementById(`criteria-max-${i}`).addEventListener('input', ()=>{
-      let t=0;
-      criteria.forEach((_,j)=>{
-        const v = parseInt(document.getElementById(`criteria-max-${j}`).value)||0;
-        t+=v;
-      });
-      document.getElementById('total-max-preview').textContent = t;
-    });
-  });
-}
-
-window.saveSetup = async function() {
-  // Read values
-  judges.forEach((j,i)=>{
-    j.name = document.getElementById(`judge-name-${i}`).value.trim() || j.name;
-  });
-  contestants.forEach((c,i)=>{
-    c.name = document.getElementById(`contestant-name-${i}`).value.trim() || c.name;
-  });
-  criteria.forEach((cr,i)=>{
-    cr.name = document.getElementById(`criteria-name-${i}`).value.trim() || cr.name;
-    cr.max  = parseInt(document.getElementById(`criteria-max-${i}`).value) || cr.max;
-  });
-
-  setSyncDot('setup-sync-dot','syncing');
-  try {
-    await update(ref(db,'/'), { judges, contestants, criteria });
-    setSyncDot('setup-sync-dot','ok');
-    toast('✓ บันทึกและ Sync แล้ว');
-    renderSetup();
-  } catch(e) {
-    setSyncDot('setup-sync-dot','err');
-    toast('❌ บันทึกไม่สำเร็จ','#C0392B');
+// ── ROUND SELECT (for judges) ──
+window.showJudgeRoundSelect = function() {
+  const list = document.getElementById('judge-round-list');
+  if (!rounds.length) {
+    list.innerHTML = `<div class="empty-state">ยังไม่มีรอบการแข่งขัน<br>ไปที่ ⚙️ ตั้งค่า เพื่อสร้างรอบก่อน</div>`;
+  } else {
+    list.innerHTML = rounds.map((r,i)=>{
+      const totalC = (r.contestants||[]).length;
+      const judgesScored = judges.filter(j=>isJudgeRoundComplete(j.id,r.id)).length;
+      const statusClass = judgesScored===judges.length?'complete':judgesScored>0?'partial':'empty';
+      const statusText = judgesScored===judges.length?'✓ ครบทุกกรรมการ':judgesScored>0?`${judgesScored}/${judges.length} กรรมการ`:'ยังไม่มีคะแนน';
+      return `<div class="round-card" onclick="selectRoundForJudge('${r.id}')">
+        <div class="round-num">${i+1}</div>
+        <div class="round-info">
+          <div class="round-name">${r.name}</div>
+          <div class="round-meta">${totalC} ผู้เข้าแข่งขัน · คะแนนเต็ม ${totalMax()} คะแนน</div>
+        </div>
+        <div class="round-status ${statusClass}">${statusText}</div>
+      </div>`;
+    }).join('');
   }
+  showScreen('screen-judge-round');
 };
 
-// ── JUDGE SELECT ──
-window.showJudgeSelect = function() {
+window.selectRoundForJudge = function(roundId) {
+  currentRoundId = roundId;
+  const r = rounds.find(r=>r.id===roundId);
+  document.getElementById('judge-select-round-label').textContent = r.name;
   renderJudgeSelectGrid();
   showScreen('screen-judge-select');
 };
 
 function renderJudgeSelectGrid() {
   document.getElementById('judge-select-grid').innerHTML = judges.map(j=>{
-    const done = getScoredCount(j.id);
-    const complete = isJudgeComplete(j.id);
-    return `
-      <div class="judge-select-card" onclick="enterJudge(${j.id})">
-        <div class="jscard-num">กรรมการที่ ${j.id}</div>
-        <div class="jscard-name">${j.name}</div>
-        <div class="jscard-status">${complete?'✓ ครบแล้ว':done>0?`${done}/${contestants.length} คน`:'ยังไม่มีคะแนน'}</div>
-      </div>`;
+    const done = getScoredCount(j.id, currentRoundId);
+    const total = currentContestants().length;
+    const complete = isJudgeRoundComplete(j.id, currentRoundId);
+    return `<div class="judge-select-card" onclick="enterJudge(${j.id})">
+      <div class="jscard-num">กรรมการที่ ${j.id}</div>
+      <div class="jscard-name">${j.name}</div>
+      <div class="jscard-status ${complete?'done':''}">${complete?'✓ ครบแล้ว':done>0?`${done}/${total} คน`:'ยังไม่มีคะแนน'}</div>
+    </div>`;
   }).join('');
 }
 
 // ── ENTER JUDGE ──
 window.enterJudge = function(judgeId) {
   currentJudgeId = judgeId;
-  currentContestantId = contestants[0].id;
+  const contestants = currentContestants();
+  currentContestantId = contestants[0]?.id;
+  const round = currentRound();
+  document.getElementById('judge-bar-round').textContent = round.name;
   document.getElementById('judge-bar-name').textContent = judges.find(j=>j.id===judgeId).name;
   showScreen('screen-judge');
 
   if (judgeUnsub) judgeUnsub();
-  judgeUnsub = onValue(ref(db,`scores/${judgeId}`), snap=>{
-    if (!allScores[judgeId]) allScores[judgeId]={};
-    if (snap.exists()) allScores[judgeId]=snap.val();
-    renderTabs();
-    renderScoringPanel();
+  judgeUnsub = onValue(ref(db,`scores/${currentRoundId}/${judgeId}`), snap=>{
+    if (!allScores[currentRoundId]) allScores[currentRoundId]={};
+    if (!allScores[currentRoundId][judgeId]) allScores[currentRoundId][judgeId]={};
+    if (snap.exists()) allScores[currentRoundId][judgeId]=snap.val();
+    renderTabs(); renderScoringPanel();
     setSyncDot('sync-dot','ok');
   });
-
-  // Also keep config in sync
-  onValue(ref(db,'contestants'), snap=>{ if(snap.exists()) contestants=snap.val(); });
-  onValue(ref(db,'criteria'),    snap=>{ if(snap.exists()) criteria=snap.val(); });
-  onValue(ref(db,'judges'),      snap=>{ if(snap.exists()) judges=snap.val(); });
 };
 
 window.confirmLeaveJudge = function() {
   if (confirm('ออกจากหน้ากรรมการ?')) {
     if (judgeUnsub) { judgeUnsub(); judgeUnsub=null; }
-    showRole();
+    showJudgeRoundSelect();
   }
 };
 
-// ── TABS ──
 function renderTabs() {
   if (!document.getElementById('screen-judge').classList.contains('active')) return;
+  const contestants = currentContestants();
   document.getElementById('contestant-tabs').innerHTML = contestants.map(c=>{
-    const done  = isScoredComplete(currentJudgeId, c.id);
-    const active= c.id===currentContestantId;
-    return `<button class="tab-btn ${active?'active':''} ${done?'done':''}" onclick="switchContestant(${c.id})">
+    const done  = isScoredComplete(currentJudgeId, currentRoundId, c.id);
+    const active = c.id === currentContestantId;
+    return `<button class="tab-btn ${active?'active':''} ${done?'done':''}" onclick="switchContestant('${c.id}')">
       คน ${c.id}${done&&!active?'<span class="tab-dot"></span>':''}
     </button>`;
   }).join('');
-  document.getElementById('judge-progress-badge').textContent=`${getScoredCount(currentJudgeId)}/${contestants.length}`;
+  document.getElementById('judge-progress-badge').textContent = `${getScoredCount(currentJudgeId,currentRoundId)}/${contestants.length}`;
 }
 
 window.switchContestant = function(cId) {
   currentContestantId=cId; renderTabs(); renderScoringPanel();
 };
 
-// ── SCORING PANEL ──
 function renderScoringPanel() {
   if (!document.getElementById('screen-judge').classList.contains('active')) return;
   const panel = document.getElementById('scoring-panel');
-  const contestant = contestants.find(c=>c.id===currentContestantId);
-  const jsc = allScores[currentJudgeId]?.[currentContestantId]||{};
+  const contestant = currentContestants().find(c=>c.id===currentContestantId);
+  if (!contestant) return;
+  const jsc = allScores[currentRoundId]?.[currentJudgeId]?.[currentContestantId]||{};
   const total = criteria.reduce((s,cr)=>s+(jsc[cr.id]??0),0);
 
   panel.innerHTML = `
@@ -523,32 +636,31 @@ function renderScoringPanel() {
     </div>
     <div class="criteria-list">
       ${criteria.map(cr=>{
-        const val=jsc[cr.id]??0; const hasVal=jsc[cr.id]!==undefined;
-        return `
-          <div class="criterion-card">
-            <div class="criterion-header">
-              <div>
-                <div class="criterion-name">${cr.name}</div>
-                <div class="criterion-max">เต็ม ${cr.max} คะแนน</div>
-              </div>
-              <div class="criterion-score-display" id="disp-${cr.id}">${hasVal?val:'-'}</div>
+        const val=jsc[cr.id]; const hasVal=val!==undefined;
+        const scored = hasVal && val>0;
+        return `<div class="criterion-card ${scored?'scored':''}">
+          <div class="criterion-header">
+            <div class="criterion-left">
+              <div class="criterion-name">${cr.name}</div>
+              <div class="criterion-max">เต็ม ${cr.max} คะแนน</div>
             </div>
-            <input type="range" class="score-slider" min="0" max="${cr.max}" value="${val}"
-              id="slider-${cr.id}"
-              oninput="updateScore('${cr.id}',${cr.max},this.value)"
-              onchange="updateScore('${cr.id}',${cr.max},this.value)">
-            <div class="score-ticks">${buildTicks(cr.max).map(t=>`<span class="score-tick">${t}</span>`).join('')}</div>
-            <div class="quick-btns">
-              ${buildQuickVals(cr.max).map(v=>`<button class="quick-btn ${v===val&&hasVal?'active':''}"
-                onclick="setScore('${cr.id}',${cr.max},${v})">${v}</button>`).join('')}
-            </div>
-          </div>`;
+            <div class="criterion-score-display ${hasVal?'':'empty'}" id="disp-${cr.id}">${hasVal?val:'-'}</div>
+          </div>
+          <div class="score-btns-5">
+            ${[1,2,3,4,5].map(v=>`
+              <button class="score-btn-5 ${hasVal&&val===v?'active':''}" data-v="${v}"
+                onclick="setScore5('${cr.id}',${v})">
+                <span class="sbn">${v}</span>
+                <span class="sbl">${SCORE_LABELS[v]}</span>
+              </button>`).join('')}
+          </div>
+        </div>`;
       }).join('')}
     </div>
     <div class="score-footer">
       <div>
         <div class="total-label">คะแนนรวม</div>
-        <div class="total-max">จาก ${totalMax()}</div>
+        <div class="total-max-txt">จาก ${totalMax()} คะแนน</div>
       </div>
       <div class="total-score" id="total-display">${total}</div>
     </div>
@@ -556,79 +668,106 @@ function renderScoringPanel() {
   `;
 }
 
-function buildTicks(max){const s=Math.min(5,max);return Array.from({length:s+1},(_,i)=>Math.round((max/s)*i));}
-function buildQuickVals(max){if(max<=10)return Array.from({length:max+1},(_,i)=>i);return Array.from({length:6},(_,i)=>Math.round((max/5)*i));}
+window.setScore5 = function(crId, value) {
+  if (!allScores[currentRoundId]) allScores[currentRoundId]={};
+  if (!allScores[currentRoundId][currentJudgeId]) allScores[currentRoundId][currentJudgeId]={};
+  if (!allScores[currentRoundId][currentJudgeId][currentContestantId]) allScores[currentRoundId][currentJudgeId][currentContestantId]={};
+  allScores[currentRoundId][currentJudgeId][currentContestantId][crId] = value;
 
-window.updateScore = function(crId,max,value){
-  const v=parseInt(value);
-  if(!allScores[currentJudgeId])allScores[currentJudgeId]={};
-  if(!allScores[currentJudgeId][currentContestantId])allScores[currentJudgeId][currentContestantId]={};
-  allScores[currentJudgeId][currentContestantId][crId]=v;
-  const d=document.getElementById(`disp-${crId}`);if(d)d.textContent=v;
-  const sl=document.getElementById(`slider-${crId}`);if(sl)sl.value=v;
-  document.querySelectorAll(`[onclick*="setScore('${crId}'"]`).forEach(btn=>
-    btn.classList.toggle('active',parseInt(btn.textContent.trim())===v));
-  const t=criteria.reduce((s,cr)=>s+(allScores[currentJudgeId]?.[currentContestantId]?.[cr.id]??0),0);
-  const td=document.getElementById('total-display');if(td)td.textContent=t;
+  // update display
+  const d = document.getElementById(`disp-${crId}`);
+  if (d) { d.textContent=value; d.classList.remove('empty'); }
+
+  // update buttons
+  document.querySelectorAll(`[onclick*="setScore5('${crId}'"]`).forEach(btn=>{
+    btn.classList.toggle('active', parseInt(btn.dataset.v)===value);
+  });
+
+  // update total
+  const jsc = allScores[currentRoundId]?.[currentJudgeId]?.[currentContestantId]||{};
+  const t = criteria.reduce((s,cr)=>s+(jsc[cr.id]??0),0);
+  const td = document.getElementById('total-display'); if(td) td.textContent=t;
 };
 
-window.setScore=function(crId,max,value){
-  const sl=document.getElementById(`slider-${crId}`);if(sl)sl.value=value;
-  updateScore(crId,max,value);
-};
-
-window.saveScore=async function(){
-  const jsc=allScores[currentJudgeId]?.[currentContestantId]||{};
-  if(criteria.some(cr=>jsc[cr.id]===undefined)){toast('⚠️ กรุณาให้คะแนนทุกหัวข้อก่อน','#C0392B');return;}
+window.saveScore = async function() {
+  const jsc = allScores[currentRoundId]?.[currentJudgeId]?.[currentContestantId]||{};
+  if (criteria.some(cr=>jsc[cr.id]===undefined)) {
+    toast('⚠️ กรุณาให้คะแนนทุกหัวข้อก่อน','#C0392B'); return;
+  }
   setSyncDot('sync-dot','syncing');
-  try{
-    await set(ref(db,`scores/${currentJudgeId}/${currentContestantId}`),jsc);
+  try {
+    await set(ref(db,`scores/${currentRoundId}/${currentJudgeId}/${currentContestantId}`), jsc);
     setSyncDot('sync-dot','ok');
     renderTabs();
     toast('✓ บันทึกแล้ว');
-    const idx=contestants.findIndex(c=>c.id===currentContestantId);
-    if(idx<contestants.length-1)setTimeout(()=>switchContestant(contestants[idx+1].id),500);
-    else if(isJudgeComplete(currentJudgeId))toast('✓ ให้คะแนนครบทุกคนแล้ว!');
-  }catch(e){setSyncDot('sync-dot','err');toast('❌ Sync ไม่สำเร็จ','#C0392B');}
+    const contestants = currentContestants();
+    const idx = contestants.findIndex(c=>c.id===currentContestantId);
+    if (idx < contestants.length-1) setTimeout(()=>switchContestant(contestants[idx+1].id), 400);
+    else if (isJudgeRoundComplete(currentJudgeId,currentRoundId)) toast('✓ ให้คะแนนครบทุกคนแล้ว!');
+  } catch(e) {
+    setSyncDot('sync-dot','err');
+    toast('❌ Sync ไม่สำเร็จ','#C0392B');
+  }
 };
 
 // ── DASHBOARD ──
-window.enterDashboard=function(){
+window.enterDashboard = function() {
   showScreen('screen-dashboard');
-  if(dashUnsub)dashUnsub();
-  dashUnsub=onValue(ref(db,'/'),snap=>{
-    if(snap.exists()){
+  if (dashUnsub) dashUnsub();
+  dashUnsub = onValue(ref(db,'/'), snap=>{
+    if (snap.exists()) {
       const d=snap.val();
-      if(d.judges)      judges=d.judges;
-      if(d.contestants) contestants=d.contestants;
-      if(d.criteria)    criteria=d.criteria;
-      if(d.scores)      allScores=d.scores||{};
+      if (d.judges)   judges=d.judges;
+      if (d.criteria) criteria=d.criteria;
+      if (d.rounds)   rounds=Array.isArray(d.rounds)?d.rounds.filter(Boolean):Object.values(d.rounds||{});
+      if (d.scores)   allScores=d.scores||{};
     } else { allScores={}; }
+    if (!dashRoundId && rounds.length) dashRoundId = rounds[0].id;
     renderDashboard();
-    const dot=document.getElementById('dash-sync-dot');if(dot)dot.className='sync-dot ok';
+    const dot=document.getElementById('dash-sync-dot'); if(dot) dot.className='sync-dot ok';
     const upd=document.getElementById('dash-last-update');
-    if(upd)upd.textContent=new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    if(upd) upd.textContent=new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
   });
 };
 
-window.leaveDashboard=function(){if(dashUnsub){dashUnsub();dashUnsub=null;}showRole();};
+window.leaveDashboard = function() {
+  if (dashUnsub) { dashUnsub(); dashUnsub=null; }
+  showRole();
+};
 
-function renderDashboard(){
-  const body=document.getElementById('dashboard-body');
-  const results=contestants.map(c=>{
-    let grand=0;const byJudge={};
+window.setDashRound = function(roundId) {
+  dashRoundId = roundId;
+  renderDashboard();
+};
+
+function renderDashboard() {
+  const body = document.getElementById('dashboard-body');
+  if (!rounds.length) {
+    body.innerHTML='<div class="empty-state">ยังไม่มีรอบการแข่งขัน<br>ไปที่ ⚙️ ตั้งค่า เพื่อสร้างรอบก่อน</div>';
+    return;
+  }
+  if (!dashRoundId) dashRoundId = rounds[0].id;
+  const round = rounds.find(r=>r.id===dashRoundId)||rounds[0];
+  const contestants = round.contestants||[];
+
+  const results = contestants.map(c=>{
+    let grand=0; const byJudge={};
     judges.forEach(j=>{
-      const js=allScores[j.id]?.[c.id]||{};
-      let jt=0;criteria.forEach(cr=>{if(js[cr.id]!==undefined)jt+=js[cr.id];});
-      byJudge[j.id]={total:jt,done:isScoredComplete(j.id,c.id)};
+      const js=allScores[round.id]?.[j.id]?.[c.id]||{};
+      let jt=0; criteria.forEach(cr=>{if(js[cr.id]!==undefined)jt+=js[cr.id];});
+      byJudge[j.id]={total:jt,done:isScoredComplete(j.id,round.id,c.id)};
       grand+=jt;
     });
-    return{...c,grand,byJudge};
+    return {...c,grand,byJudge};
   });
   const sorted=[...results].sort((a,b)=>b.grand-a.grand);
-  const rankOf={};sorted.forEach((r,i)=>rankOf[r.id]=i+1);
+  const rankOf={}; sorted.forEach((r,i)=>rankOf[r.id]=i+1);
 
-  body.innerHTML=`
+  body.innerHTML = `
+    <div class="round-selector">
+      ${rounds.map(r=>`<div class="round-tab ${r.id===round.id?'active':''}" onclick="setDashRound('${r.id}')">${r.name}</div>`).join('')}
+    </div>
+
     <div class="dash-section-title">อันดับคะแนนรวม</div>
     <div class="rank-list">
       ${sorted.map((r,i)=>`
@@ -647,54 +786,241 @@ function renderDashboard(){
     <div class="dash-section-title">สถานะกรรมการ</div>
     <div class="judge-status-strip">
       ${judges.map(j=>{
-        const done=getScoredCount(j.id);
-        return`<div class="jss-card ${done>0?'active-judge':''}">
+        const done=getScoredCount(j.id,round.id);
+        return `<div class="jss-card ${done>0?'active-j':''}">
           <div class="jss-top"><div class="jss-name">${j.name}</div><div class="jss-done">${done}/${contestants.length}</div></div>
-          <div class="jss-bar-wrap"><div class="jss-bar" style="width:${(done/contestants.length)*100}%"></div></div>
+          <div class="jss-bar-wrap"><div class="jss-bar" style="width:${contestants.length?((done/contestants.length)*100):0}%"></div></div>
         </div>`;}).join('')}
     </div>
 
-    <div class="dash-section-title">ตารางละเอียด</div>
+    <div class="dash-section-title">ตารางคะแนนละเอียด</div>
     <div class="dash-table-wrap">
       <table>
-        <thead>
-          <tr>
-            <th>ผู้เข้าแข่งขัน</th>
-            ${judges.map(j=>`<th>กก.${j.id}</th>`).join('')}
-            <th>รวม</th><th>อันดับ</th>
-          </tr>
-        </thead>
+        <thead><tr>
+          <th>ผู้เข้าแข่งขัน</th>
+          ${judges.map(j=>`<th>กก.${j.id}</th>`).join('')}
+          <th>รวม</th><th>อันดับ</th>
+        </tr></thead>
         <tbody>
           ${sorted.map(r=>`
             <tr class="${rankOf[r.id]===1?'rank-row-1':''}">
               <td>${r.name}</td>
-              ${judges.map(j=>`<td>${r.byJudge[j.id].done?r.byJudge[j.id].total:'<span style="color:var(--text-dim)">-</span>'}</td>`).join('')}
+              ${judges.map(j=>`<td>${r.byJudge[j.id].done?r.byJudge[j.id].total:'<span style="color:var(--gray4)">-</span>'}</td>`).join('')}
               <td class="total-cell">${r.grand}</td>
               <td><span class="dbadge ${rankOf[r.id]===1?'r1':''}">${rankOf[r.id]}</span></td>
             </tr>`).join('')}
         </tbody>
       </table>
     </div>
-    <button class="btn-reset-dash" onclick="confirmReset()">🗑 รีเซ็ตคะแนนทั้งหมด</button>
+    <button class="btn-danger" onclick="confirmResetRound('${round.id}','${round.name}')">🗑 รีเซ็ตคะแนนรอบนี้</button>
   `;
 }
 
-window.confirmReset=async function(){
-  if(confirm('ยืนยันรีเซ็ตคะแนนทั้งหมด?')){
-    try{await remove(ref(db,'scores'));allScores={};renderDashboard();toast('รีเซ็ตแล้ว','#C0392B');}
-    catch(e){toast('ไม่สำเร็จ','#C0392B');}
+window.confirmResetRound = async function(roundId, roundName) {
+  if (confirm(`รีเซ็ตคะแนนของ "${roundName}"?\nข้อมูลจะหายถาวร`)) {
+    try {
+      await remove(ref(db,`scores/${roundId}`));
+      if (allScores[roundId]) delete allScores[roundId];
+      renderDashboard();
+      toast('รีเซ็ตแล้ว','#C0392B');
+    } catch(e) { toast('ไม่สำเร็จ','#C0392B'); }
   }
 };
 
+// ── SETUP ──
+window.showSetup = function() {
+  showScreen('screen-setup');
+  renderSetup();
+};
+
+function renderSetup() {
+  const body = document.getElementById('setup-body');
+  body.innerHTML = `
+    <div class="setup-section">
+      <div class="setup-section-title">รอบการแข่งขัน</div>
+      ${rounds.length ? rounds.map((r,i)=>`
+        <div class="setup-row">
+          <div class="setup-row-label">รอบ ${i+1}</div>
+          <input class="setup-input" id="round-name-${i}" value="${r.name}" placeholder="ชื่อรอบ">
+          <button onclick="editRoundContestants('${r.id}')" style="background:var(--green-light);border:1px solid #B2D8C4;color:var(--green-dark);border-radius:7px;padding:5px 10px;font-size:11px;cursor:pointer;white-space:nowrap;font-family:'Sarabun',sans-serif;font-weight:600">
+            ผู้เข้าแข่งขัน ${(r.contestants||[]).length} คน
+          </button>
+          <button onclick="deleteRound('${r.id}','${r.name}')" style="background:none;border:none;color:var(--gray4);cursor:pointer;font-size:16px;padding:2px 4px">×</button>
+        </div>`).join('') : '<div style="font-size:13px;color:var(--gray3);padding:8px 2px">ยังไม่มีรอบ — กดเพิ่มด้านล่าง</div>'}
+      <button class="btn-add-round" onclick="addRound()" style="margin-top:4px">+ เพิ่มรอบใหม่</button>
+    </div>
+
+    <div class="setup-section">
+      <div class="setup-section-title">ชื่อกรรมการ (${judges.length} ท่าน)</div>
+      ${judges.map((j,i)=>`
+        <div class="setup-row">
+          <div class="setup-row-label">กก. ${j.id}</div>
+          <input class="setup-input" id="judge-name-${i}" value="${j.name}" placeholder="ชื่อกรรมการ">
+        </div>`).join('')}
+    </div>
+
+    <div class="setup-section">
+      <div class="setup-section-title">หัวข้อการให้คะแนน</div>
+      ${criteria.map((cr,i)=>`
+        <div class="setup-row">
+          <div class="setup-row-label">ข้อ ${i+1}</div>
+          <input class="setup-input" id="criteria-name-${i}" value="${cr.name}" placeholder="ชื่อหัวข้อ">
+          <input class="setup-input-max" id="criteria-max-${i}" type="number" min="1" max="100" value="${cr.max}">
+          <span class="setup-max-label">คะแนน</span>
+        </div>`).join('')}
+      <div style="font-size:12px;color:var(--gray3);padding:6px 2px">
+        รวมเต็ม: <span id="total-max-preview" style="color:var(--green);font-family:'IBM Plex Mono',monospace;font-weight:700">${totalMax()}</span> คะแนน
+      </div>
+    </div>
+
+    <button class="btn-setup-save" onclick="saveSetup()">💾 บันทึกและ Sync ทุกเครื่อง</button>
+    <div class="setup-note">การเปลี่ยนชื่อรอบ/กรรมการ/หัวข้อ จะ sync ทันที<br>การเพิ่ม/ลบรอบ กด "บันทึก" ด้วย</div>
+  `;
+
+  // live total preview
+  criteria.forEach((_,i)=>{
+    const el = document.getElementById(`criteria-max-${i}`);
+    if (el) el.addEventListener('input',()=>{
+      let t=0;
+      criteria.forEach((_,j)=>{ t+=parseInt(document.getElementById(`criteria-max-${j}`)?.value)||0; });
+      const prev=document.getElementById('total-max-preview'); if(prev) prev.textContent=t;
+    });
+  });
+}
+
+window.addRound = function() {
+  openModal(
+    'เพิ่มรอบใหม่',
+    'ตั้งชื่อรอบการแข่งขัน เช่น "รอบคัดเลือก", "รอบชิงชนะเลิศ"',
+    '',
+    async (name)=>{
+      if (!name) return;
+      const newRound = { id: 'r'+Date.now(), name, contestants: [] };
+      rounds.push(newRound);
+      renderSetup();
+      toast('เพิ่มรอบแล้ว — อย่าลืมกด "บันทึก"');
+    }
+  );
+};
+
+window.deleteRound = function(roundId, roundName) {
+  if (confirm(`ลบ "${roundName}"?\nคะแนนในรอบนี้จะถูกลบด้วย`)) {
+    rounds = rounds.filter(r=>r.id!==roundId);
+    renderSetup();
+    toast('ลบรอบแล้ว — อย่าลืมกด "บันทึก"');
+  }
+};
+
+window.editRoundContestants = function(roundId) {
+  const round = rounds.find(r=>r.id===roundId);
+  // Build simple contestant edit modal as a full-screen overlay
+  const contestants = round.contestants||[];
+  // Default 5 contestants if empty
+  const list = contestants.length ? contestants : Array.from({length:5},(_,i)=>({id:i+1,name:`ผู้เข้าแข่งขัน ${i+1}`}));
+
+  openModal(
+    `ผู้เข้าแข่งขัน — ${round.name}`,
+    'แก้ไขชื่อผู้เข้าแข่งขัน (คั่นด้วยบรรทัดใหม่ 1 คนต่อบรรทัด)',
+    list.map(c=>c.name).join('\n'),
+    async (text)=>{
+      const names = text.split('\n').map(n=>n.trim()).filter(Boolean);
+      round.contestants = names.map((name,i)=>({id:i+1,name}));
+      renderSetup();
+      toast('อัปเดตรายชื่อแล้ว — อย่าลืมกด "บันทึก"');
+    },
+    true // multiline
+  );
+};
+
+window.saveSetup = async function() {
+  // read round names
+  rounds.forEach((r,i)=>{
+    const el=document.getElementById(`round-name-${i}`); if(el) r.name=el.value.trim()||r.name;
+  });
+  judges.forEach((j,i)=>{
+    const el=document.getElementById(`judge-name-${i}`); if(el) j.name=el.value.trim()||j.name;
+  });
+  criteria.forEach((cr,i)=>{
+    const n=document.getElementById(`criteria-name-${i}`);
+    const m=document.getElementById(`criteria-max-${i}`);
+    if(n) cr.name=n.value.trim()||cr.name;
+    if(m) cr.max=parseInt(m.value)||cr.max;
+  });
+
+  setSyncDot('setup-sync-dot','syncing');
+  try {
+    await update(ref(db,'/'), { judges, criteria, rounds });
+    setSyncDot('setup-sync-dot','ok');
+    toast('✓ บันทึกและ Sync แล้ว');
+    renderSetup();
+  } catch(e) {
+    setSyncDot('setup-sync-dot','err');
+    toast('❌ บันทึกไม่สำเร็จ','#C0392B');
+  }
+};
+
+// ── MODAL (generic) ──
+let modalTextarea = false;
+window.openModal = function(title, sub, val, cb, multiline=false) {
+  modalCallback = cb; modalTextarea = multiline;
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-sub').textContent = sub;
+  const inp = document.getElementById('modal-input');
+
+  if (multiline) {
+    // Replace input with textarea
+    const ta = document.createElement('textarea');
+    ta.id='modal-input'; ta.className='modal-input'; ta.rows=8;
+    ta.style.resize='vertical'; ta.value=val; ta.placeholder='...';
+    inp.parentNode.replaceChild(ta, inp);
+    setTimeout(()=>{ ta.focus(); }, 80);
+  } else {
+    // Ensure it's an input
+    if (inp.tagName==='TEXTAREA') {
+      const ni=document.createElement('input');
+      ni.type='text'; ni.id='modal-input'; ni.className='modal-input';
+      ni.onkeydown=(e)=>{ if(e.key==='Enter') modalConfirm(); };
+      inp.parentNode.replaceChild(ni, inp);
+    }
+    document.getElementById('modal-input').value = val;
+    setTimeout(()=>{ document.getElementById('modal-input').focus(); document.getElementById('modal-input').select(); }, 80);
+  }
+  document.getElementById('modal').style.display='flex';
+};
+
+window.modalConfirm = function() {
+  const val = document.getElementById('modal-input').value;
+  closeModal();
+  if (modalCallback) modalCallback(val.trim());
+};
+
+window.closeModal = function() {
+  document.getElementById('modal').style.display='none';
+  modalCallback=null;
+};
+
+window.onModalBackdrop = function(e) {
+  if (e.target===document.getElementById('modal')) closeModal();
+};
+
 // ── HELPERS ──
-function isScoredComplete(jId,cId){const s=allScores[jId]?.[cId]||{};return criteria.every(cr=>s[cr.id]!==undefined);}
-function isJudgeComplete(jId){return contestants.every(c=>isScoredComplete(jId,c.id));}
-function getScoredCount(jId){return contestants.filter(c=>isScoredComplete(jId,c.id)).length;}
+function isScoredComplete(jId,rId,cId){
+  const s=allScores[rId]?.[jId]?.[cId]||{};
+  return criteria.every(cr=>s[cr.id]!==undefined);
+}
+function isJudgeRoundComplete(jId,rId){
+  const contestants=(rounds.find(r=>r.id===rId)?.contestants)||[];
+  return contestants.length>0 && contestants.every(c=>isScoredComplete(jId,rId,c.id));
+}
+function getScoredCount(jId,rId){
+  const contestants=(rounds.find(r=>r.id===rId)?.contestants)||[];
+  return contestants.filter(c=>isScoredComplete(jId,rId,c.id)).length;
+}
 function setSyncDot(id,state){const d=document.getElementById(id);if(d)d.className='sync-dot '+state;}
 function toast(msg,bg){
   const t=document.getElementById('toast');
-  t.textContent=msg;t.style.background=bg||'var(--green)';
-  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);
+  t.textContent=msg; t.style.background=bg||'var(--green)';
+  t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500);
 }
 
 init();
