@@ -638,14 +638,8 @@ window.saveScore = async function() {
       setTimeout(()=>switchC(contestants[idx+1].id),400);
     } else if (isRoundPhaseComplete(curJudgeId,curRoundId,curPhase)) {
       if (curPhase==='qual') {
-        // Check if ALL judges finished qual
-        const allJudgesDone = judges.every(j=>isRoundPhaseComplete(j.id,curRoundId,'qual'));
-        if (allJudgesDone) {
-          toast('✓ ครบทุกคน! กำลังเปิดรอบชิง...');
-          setTimeout(()=>autoOpenFinal(curRoundId), 1000);
-        } else {
-          toast('✓ ให้คะแนนครบแล้ว รอกรรมการท่านอื่น');
-        }
+        toast('✓ ครบทุกคน! กำลังเปิดรอบชิง...');
+        setTimeout(()=>autoOpenFinal(curRoundId), 800);
       } else {
         toast('✓ ให้คะแนนรอบชิงครบแล้ว!');
       }
@@ -797,36 +791,35 @@ function renderDashboard() {
   `;
 }
 
-// Open final: compute top 2, save to round.finalists, set phase='final'
-// Auto-open final when all judges done with qual
+// Auto-open final: top 2 = contestant #1 and #2 by order (fixed)
 async function autoOpenFinal(roundId) {
   const round = rounds.find(r=>r.id===roundId);
-  if (round.finalists&&round.finalists.length>0) return; // already opened
+  // If finalists already set, just switch this judge to final
+  if (round.finalists&&round.finalists.length>0) {
+    curPhase='final';
+    curCId=round.finalists[0]?.id;
+    document.getElementById('judge-progress-badge').className='badge amber';
+    const bar=document.getElementById('judge-bar-round');
+    if(bar) bar.textContent=round.name+' · รอบชิง';
+    renderTabs(); renderScoringPanel();
+    return;
+  }
+  // First judge to finish: set finalists = contestant 1 & 2 (by list order)
   const contestants = round.contestants||[];
-  const totals = contestants.map(c=>{
-    let grand=0;
-    judges.forEach(j=>{
-      const js=allScores[roundId]?.['qual']?.[j.id]?.[c.id]||{};
-      qualCriteria.forEach(cr=>{if(js[cr.id]!==undefined)grand+=js[cr.id];});
-    });
-    return {...c,grand};
-  });
-  totals.sort((a,b)=>b.grand-a.grand);
-  const top2 = totals.slice(0,2);
-  round.finalists = top2.map(c=>({id:c.id,name:c.name}));
+  const finalist1 = contestants[0];
+  const finalist2 = contestants[1];
+  if (!finalist1||!finalist2) { toast('❌ ไม่มีผู้เข้าแข่งขัน','#C0392B'); return; }
+  round.finalists = [{id:finalist1.id,name:finalist1.name},{id:finalist2.id,name:finalist2.name}];
   round.phase = 'final';
   try {
     await update(ref(db,`rounds/${rounds.indexOf(round)}`),{finalists:round.finalists,phase:'final'});
-    // Switch judge to final phase
     curPhase='final';
-    curCId=round.finalists[0]?.id;
-    const pb=document.getElementById('judge-progress-badge');
-    if(pb){pb.className='badge amber';}
+    curCId=round.finalists[0].id;
+    document.getElementById('judge-progress-badge').className='badge amber';
     const bar=document.getElementById('judge-bar-round');
     if(bar) bar.textContent=round.name+' · รอบชิง';
-    toast(`🏆 เปิดรอบชิง: ${top2.map(c=>c.name).join(' vs ')}`,'#B45309');
-    renderTabs();
-    renderScoringPanel();
+    toast(`🏆 เปิดรอบชิง: ${finalist1.name} vs ${finalist2.name}`,'#B45309');
+    renderTabs(); renderScoringPanel();
   } catch(e) { toast('❌ เปิดรอบชิงไม่สำเร็จ','#C0392B'); }
 }
 
