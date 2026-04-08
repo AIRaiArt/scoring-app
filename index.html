@@ -791,13 +791,19 @@ async function autoOpenFinal(roundId) {
 
   // Set finalists in Firebase if not yet set (first judge to finish)
   if (!round.finalists||round.finalists.length===0) {
-    round.finalists = [
-      {id:finalist1.id, name:finalist1.name},
-      {id:finalist2.id, name:finalist2.name}
-    ];
+    // Compute Top 2 by total score across all judges who have scored
+    const scoredTotals = contestants.map(con=>{
+      let grand=0;
+      judges.forEach(j=>{
+        const js=allScores[roundId]?.['qual']?.[j.id]?.[con.id]||{};
+        qualCriteria.forEach(cr=>{if(js[cr.id]!==undefined)grand+=js[cr.id];});
+      });
+      return {...con, grand};
+    });
+    scoredTotals.sort((a,b)=>b.grand-a.grand);
+    const top2 = scoredTotals.slice(0,2);
+    round.finalists = top2.map(con=>({id:con.id, name:con.name}));
     try {
-      // NOTE: do NOT change round.phase — each judge controls their own curPhase
-      // Store finalists only, so other judges can still do qual
       await update(ref(db,`rounds/${rounds.indexOf(round)}`),{finalists:round.finalists});
     } catch(e) { toast('❌ บันทึก finalists ไม่สำเร็จ','#C0392B'); return; }
   }
