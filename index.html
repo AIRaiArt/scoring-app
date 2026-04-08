@@ -784,69 +784,6 @@ function renderDashboard() {
 // Finalists = contestant #1 and #2 (fixed by list order, not score)
 async function autoOpenFinal(roundId) {
   const round = rounds.find(r=>r.id===roundId);
-  const contestants = round.contestants || [];
-
-  // คำนวณคะแนนรวมทุกคน
-  const totals = contestants.map(c=>{
-    let grand = 0;
-
-    judges.forEach(j=>{
-      const js = allScores[roundId]?.['qual']?.[j.id]?.[c.id] || {};
-
-      qualCriteria.forEach(cr=>{
-        if(js[cr.id] !== undefined){
-          grand += js[cr.id];
-        }
-      });
-    });
-
-    return {
-      ...c,
-      grand
-    };
-  });
-
-  // เรียงคะแนนมากไปน้อย
-  totals.sort((a,b)=>b.grand-a.grand);
-
-  // เอา Top 2
-  const top2 = totals.slice(0,2);
-
-  if(top2.length < 2){
-    toast('❌ ผู้เข้าแข่งขันไม่พอ','#C0392B');
-    return;
-  }
-
-  // บันทึก finalists
-  round.finalists = top2.map(c=>({
-    id:c.id,
-    name:c.name
-  }));
-
-  try{
-    await update(ref(db,`rounds/${rounds.indexOf(round)}`),{
-      finalists:round.finalists
-    });
-  }catch(e){
-    toast('❌ บันทึก finalists ไม่สำเร็จ','#C0392B');
-    return;
-  }
-
-  // เปิดรอบชิง
-  curPhase='final';
-  curCId=round.finalists[0].id;
-
-  document.getElementById('judge-progress-badge').className='badge amber';
-
-  const bar=document.getElementById('judge-bar-round');
-  if(bar) bar.textContent=round.name+' · รอบชิง';
-
-  toast(`🏆 เปิดรอบชิง: ${top2[0].name} vs ${top2[1].name}`,'#B45309');
-
-  renderTabs();
-  renderScoringPanel();
-}
-  const round = rounds.find(r=>r.id===roundId);
   const contestants = round.contestants||[];
   const finalist1 = contestants[0];
   const finalist2 = contestants[1];
