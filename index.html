@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ระบบตัดสินการประกวด</title>
+<title>AGRITHON by ARDA</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&family=IBM+Plex+Mono:wght@400;600&display=swap');
 :root{
@@ -216,7 +216,7 @@ tr.row-1 td{color:var(--green-dark)}.tr.row-1 td:first-child{font-weight:800}
 <div id="screen-role" class="screen">
   <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 20px">
     <div class="role-logo">Scoring System</div>
-    <div class="role-title">ระบบตัดสินการประกวด</div>
+    <div class="role-title" style="font-size:20px;line-height:1.3">ระบบตัดสินการแข่งขัน<br><span style="color:var(--green)">AGRITHON by ARDA</span></div>
     <div class="role-subtitle">เลือกโหมดการใช้งาน</div>
     <div class="role-cards">
       <div class="role-card primary" onclick="showJudgeRoundList()">
@@ -458,43 +458,27 @@ window.showRole = function() {
   showScreen('screen-role');
 };
 
-// ── JUDGE: ROUND LIST ──
+// ── JUDGE: go directly to judge select using rounds[0] ──
 window.showJudgeRoundList = function() {
-  const el = document.getElementById('judge-round-list');
-  el.innerHTML = rounds.map((r,i)=>{
-    const phase = r.phase||'qual';
-    const contestants = phase==='qual'?(r.contestants||[]):(r.finalists||[]);
-    const totalC = contestants.length;
-    const done = judges.filter(j=>isRoundPhaseComplete(j.id,r.id,phase)).length;
-    return `<div class="round-card" onclick="selectRoundPhase('${r.id}')">
-      <div class="round-num ${phase==='final'?'final':''}">${i+1}</div>
-      <div class="round-info">
-        <div class="round-name">${r.name}</div>
-        <div class="round-meta">
-          <span class="phase-tag ${phase}">${phase==='qual'?'รอบคัดเลือก':'รอบชิง'}</span>
-          ${totalC} คน · เต็ม ${phase==='qual'?qualMax():finalMax()} คะแนน
-        </div>
-      </div>
-      <div style="font-size:11px;color:${done===judges.length?'var(--green)':done>0?'var(--amber)':'var(--gray3)'};font-weight:600">
-        ${done===judges.length?'✓ ครบ':done>0?`${done}/${judges.length} กก.`:'ยังไม่มี'}
-      </div>
-    </div>`;
-  }).join('') || '<div class="empty-state">ยังไม่มีรอบ<br>ตั้งค่าที่ ⚙️</div>';
-  showScreen('screen-judge-round');
-};
-
-window.selectRoundPhase = function(roundId) {
-  curRoundId = roundId;
-  const r = rounds.find(r=>r.id===roundId);
-  curPhase = r.phase||'qual';
-  // check finalists exist if final
-  if (curPhase==='final' && (!r.finalists||r.finalists.length===0)) {
-    toast('⚠️ ยังไม่มีผู้เข้ารอบชิง — Admin ต้องเปิดรอบชิงก่อน','#B45309'); return;
-  }
+  if (!rounds.length) { toast('ยังไม่มีรอบ ตั้งค่าก่อน','#C0392B'); return; }
+  const r = rounds[0];
+  curRoundId = r.id;
+  // Each judge tracks their own phase independently
+  // phase is determined per-judge: if this judge finished qual → go final
+  // But round.phase may have been set to 'final' by another judge
+  // Judge picks up whatever phase is active on the round
+  // Each judge independently: if this judge finished qual → final, else qual
+  const judgeQualDone = curJudgeId && isRoundPhaseComplete(curJudgeId, r.id, 'qual');
+  const finalistsReady = r.finalists && r.finalists.length > 0;
+  curPhase = (judgeQualDone && finalistsReady) ? 'final' : 'qual';
   document.getElementById('jsel-round-label').textContent =
     r.name + (curPhase==='final'?' · รอบชิง':' · รอบคัดเลือก');
   renderJudgeSelectGrid();
   showScreen('screen-judge-select');
+};
+
+window.selectRoundPhase = function(roundId) {
+  window.showJudgeRoundList();
 };
 
 function renderJudgeSelectGrid() {
@@ -513,9 +497,13 @@ function renderJudgeSelectGrid() {
 // ── JUDGE: SCORING ──
 window.enterJudge = function(judgeId) {
   curJudgeId = judgeId;
+  const r = curRound();
+  // Determine phase per this judge
+  const jQualDone = isRoundPhaseComplete(judgeId, r.id, 'qual');
+  const fReady = r.finalists && r.finalists.length > 0;
+  curPhase = (jQualDone && fReady) ? 'final' : 'qual';
   const contestants = activeContestants();
   curCId = contestants[0]?.id;
-  const r = curRound();
   document.getElementById('judge-bar-round').textContent = r.name+(curPhase==='final'?' · รอบชิง':' · คัดเลือก');
   document.getElementById('judge-bar-name').textContent = judges.find(j=>j.id===judgeId).name;
   const pb = document.getElementById('judge-progress-badge');
@@ -546,8 +534,9 @@ function renderTabs() {
   document.getElementById('contestant-tabs').innerHTML = contestants.map(c=>{
     const locked = isScoredComplete(curJudgeId,curRoundId,curPhase,c.id);
     const active  = c.id===curCId;
+    const shortName = c.name.replace('ผู้เข้าแข่งขัน ','').replace('ผู้แข่งขัน ','') || String(c.id);
     return `<button class="tab-btn ${active?'active':''} ${locked?'locked':''}" onclick="switchC(${c.id})">
-      คน ${c.id}${locked?'<span style="font-size:9px;display:block;margin-top:1px">🔒</span>':''}
+      ${shortName}${locked?'<span style="font-size:9px;display:block;margin-top:1px">🔒</span>':''}
     </button>`;
   }).join('');
   document.getElementById('judge-progress-badge').textContent =
@@ -570,8 +559,8 @@ function renderScoringPanel() {
   panel.innerHTML = `
     <div class="contestant-header">
       <div class="c-phase-tag ${isFinal?'final':'qual'}">${isFinal?'รอบชิง':'รอบคัดเลือก'}</div>
-      <div class="c-num-label">ลำดับที่ ${curCId}</div>
-      <div class="c-name-big">${contestant.name}</div>
+      <div class="c-num-label">${isFinal ? ('ผู้เข้าแข่งขันที่ ' + (activeContestants().findIndex(x=>x.id===curCId)+1)) : ('ลำดับที่ ' + curCId)}</div>
+      <div class="c-name-big">${isFinal ? contestant.name : contestant.name}</div>
     </div>
     <div class="criteria-list">
       ${crits.map(cr=>{
@@ -791,36 +780,36 @@ function renderDashboard() {
   `;
 }
 
-// Auto-open final: top 2 = contestant #1 and #2 by order (fixed)
+// Auto-open final: each judge independently switches after finishing qual
+// Finalists = contestant #1 and #2 (fixed by list order, not score)
 async function autoOpenFinal(roundId) {
   const round = rounds.find(r=>r.id===roundId);
-  // If finalists already set, just switch this judge to final
-  if (round.finalists&&round.finalists.length>0) {
-    curPhase='final';
-    curCId=round.finalists[0]?.id;
-    document.getElementById('judge-progress-badge').className='badge amber';
-    const bar=document.getElementById('judge-bar-round');
-    if(bar) bar.textContent=round.name+' · รอบชิง';
-    renderTabs(); renderScoringPanel();
-    return;
-  }
-  // First judge to finish: set finalists = contestant 1 & 2 (by list order)
   const contestants = round.contestants||[];
   const finalist1 = contestants[0];
   const finalist2 = contestants[1];
   if (!finalist1||!finalist2) { toast('❌ ไม่มีผู้เข้าแข่งขัน','#C0392B'); return; }
-  round.finalists = [{id:finalist1.id,name:finalist1.name},{id:finalist2.id,name:finalist2.name}];
-  round.phase = 'final';
-  try {
-    await update(ref(db,`rounds/${rounds.indexOf(round)}`),{finalists:round.finalists,phase:'final'});
-    curPhase='final';
-    curCId=round.finalists[0].id;
-    document.getElementById('judge-progress-badge').className='badge amber';
-    const bar=document.getElementById('judge-bar-round');
-    if(bar) bar.textContent=round.name+' · รอบชิง';
-    toast(`🏆 เปิดรอบชิง: ${finalist1.name} vs ${finalist2.name}`,'#B45309');
-    renderTabs(); renderScoringPanel();
-  } catch(e) { toast('❌ เปิดรอบชิงไม่สำเร็จ','#C0392B'); }
+
+  // Set finalists in Firebase if not yet set (first judge to finish)
+  if (!round.finalists||round.finalists.length===0) {
+    round.finalists = [
+      {id:finalist1.id, name:finalist1.name},
+      {id:finalist2.id, name:finalist2.name}
+    ];
+    try {
+      // NOTE: do NOT change round.phase — each judge controls their own curPhase
+      // Store finalists only, so other judges can still do qual
+      await update(ref(db,`rounds/${rounds.indexOf(round)}`),{finalists:round.finalists});
+    } catch(e) { toast('❌ บันทึก finalists ไม่สำเร็จ','#C0392B'); return; }
+  }
+
+  // Switch THIS judge to final, regardless of other judges
+  curPhase = 'final';
+  curCId = round.finalists[0].id;
+  document.getElementById('judge-progress-badge').className='badge amber';
+  const bar=document.getElementById('judge-bar-round');
+  if(bar) bar.textContent=round.name+' · รอบชิง';
+  toast(`🏆 เปิดรอบชิง: ${round.finalists[0].name} vs ${round.finalists[1].name}`,'#B45309');
+  renderTabs(); renderScoringPanel();
 }
 
 window.openFinalRound = async function(roundId) {
